@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ title }}</title> <!-- Используем переменную title -->
+    <!-- Стили скопируем из add_breakdown.html, но добавим стили для таблицы -->
+    <style>
+        body { font-family: sans-serif; margin: 20px; background-color: #f4f4f4; }
+        nav { margin-bottom: 15px; }
+        table {
+            width: 100%;
+            border-collapse: collapse; /* Убираем двойные рамки */
+            margin-top: 20px;
+            background-color: #fff;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        th, td {
+            border: 1px solid #ddd; /* Светлые рамки */
+            padding: 10px; /* Отступы внутри ячеек */
+            text-align: left; /* Выравнивание по левому краю */
+            vertical-align: top; /* Выравнивание по верху */
+        }
+        th {
+            background-color: #f2f2f2; /* Фон заголовков */
+            font-weight: bold;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9; /* Чередование цвета строк */
+        }
+        tr:hover {
+            background-color: #f1f1f1; /* Подсветка строки при наведении */
+        }
+        .description-col { /* Стиль для длинных описаний */
+            max-width: 250px;
+            word-wrap: break-word; /* Перенос длинных слов */
+        }
+        .photo-col img { /* Стиль для миниатюр фото */
+            max-width: 100px;
+            max-height: 100px;
+            display: block; /* Чтобы ссылка была под картинкой */
+        }
+        /* Стили для flash-сообщений */
+        .flash-message { padding: 10px; margin-bottom: 15px; border-radius: 4px; }
+        .flash-success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .flash-danger { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .flash-info { background-color: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        .flash-warning { background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
+    </style>
+</head>
+<body>
+    <!-- Навигация (с новой ссылкой) -->
+    <nav>
+        <a href="{{ url_for('index') }}">Главная</a> |
+        {% if current_user.is_authenticated %}
+            <span>Привет, {{ current_user.full_name }}!</span> |
+            <a href="{{ url_for('add_breakdown') }}">Добавить запись</a> |
+            <!-- !!! ДОБАВЛЯЕМ ССЫЛКУ СЮДА !!! -->
+            <a href="{{ url_for('view_breakdowns') }}">Просмотреть записи</a> |
+            <a href="{{ url_for('logout') }}">Выйти</a>
+        {% else %}
+            <a href="{{ url_for('login') }}">Войти</a> |
+            <a href="{{ url_for('register') }}">Регистрация</a>
+        {% endif %}
+    </nav>
+    <hr>
+    
+<!-- !!! НАЧАЛО ФОРМЫ ФИЛЬТРОВ !!! -->
+<div class="filter-form" style="background-color: #e9ecef; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
+    <h2>Фильтры</h2>
+    {# Форма будет отправлять данные GET-запросом на эту же страницу #}
+    <form method="GET" action="{{ url_for('view_breakdowns') }}">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+
+            {# Фильтр по Заводу #}
+            <div>
+                <label for="factory_filter">Завод:</label><br>
+                <select name="factory_id" id="factory_filter" style="width: 100%;"> {# Имя name="factory_id" #}
+                    <option value="">-- Все заводы --</option>
+                    {# Цикл по списку factories из Flask #}
+                    {% for factory in factories %}
+                    <option value="{{ factory.id }}" {% if request.args.get('factory_id')|int == factory.id %}selected{% endif %}>
+                        {{ factory.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            {# Фильтр по Линии #}
+            <div>
+                <label for="line_filter">Линия:</label><br>
+                <select name="line_id" id="line_filter" style="width: 100%;"> {# Имя name="line_id" #}
+                    <option value="">-- Все линии --</option>
+                    {% for line in lines %}
+                    <option value="{{ line.id }}" {% if request.args.get('line_id')|int == line.id %}selected{% endif %}>
+                        {{ line.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            {# Фильтр по Машине #}
+            <div>
+                <label for="machine_filter">Машина:</label><br>
+                <select name="machine_id" id="machine_filter" style="width: 100%;"> {# Имя name="machine_id" #}
+                    <option value="">-- Все машины --</option>
+                     {% for machine in machines %}
+                    <option value="{{ machine.id }}" {% if request.args.get('machine_id')|int == machine.id %}selected{% endif %}>
+                        {{ machine.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            {# Фильтр по Дате проблемы #}
+            <div>
+                <label for="date_filter">Дата проблемы:</label><br>
+                {# Используем обычный input type="date" #}
+                <input type="date" name="problem_date" id="date_filter" value="{{ request.args.get('problem_date', '') }}" style="width: 100%;">
+                {# request.args.get('problem_date', '') получает значение из URL или пустую строку #}
+            </div>
+
+            {# Фильтр по Автору (пользователю) #}
+            {# !!! Этот блок потребует передачи списка пользователей из Flask !!! #}
+            <div>
+                <label for="user_filter">Кто добавил:</label><br>
+                <select name="user_id" id="user_filter" style="width: 100%;">
+                    <option value="">-- Все пользователи --</option>
+                    {# Цикл по пользователям будет добавлен позже, когда передадим их из Flask #}
+                    {% for user in users_list %} {# users_list - имя переменной из Flask #}
+                    <option value="{{ user.id }}" {% if request.args.get('user_id')|int == user.id %}selected{% endif %}>
+                        {{ user.full_name }} ({{ user.email }})
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            {# Фильтр по Тексту (поиск в описаниях и комментарии) #}
+            <div>
+                <label for="search_filter">Поиск по тексту:</label><br>
+                <input type="search" name="search" id="search_filter" value="{{ request.args.get('search', '') }}" placeholder="Проблема, решение, коммент..." style="width: 100%;">
+            </div>
+
+        </div>
+
+        {# Кнопки Применить и Сбросить #}
+        <div style="margin-top: 15px;">
+            <button type="submit" class="btn" style="background-color: hsl(108, 92%, 35%);">Применить фильтры</button>
+            {# Ссылка для сброса просто ведет на URL без параметров #}
+            <a href="{{ url_for('view_breakdowns') }}" class="btn" style="background-color: #ffffff; text-decoration: none;">Сбросить</a>
+        </div>
+    </form>
+</div>
+<!-- !!! КОНЕЦ ФОРМЫ ФИЛЬТРОВ !!! -->
+
+    <h1>{{ title }}</h1>
+
+    <!-- Отображение flash-сообщений -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="flash-message flash-{{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <!-- Таблица с записями -->
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Завод</th>
+                <th>Линия</th>
+                <th>Машина</th>
+                <th>Дата проблемы</th>
+                <th>Кто добавил</th>
+                <th class="description-col">Описание проблемы</th>
+                <th class="description-col">Описание решения</th>
+                <th class="description-col">Комментарий</th>
+                <th>Фото</th>
+                <th>Добавлено</th> <!-- Дата создания записи -->
+            </tr>
+        </thead>
+        <tbody>
+            {# Перебираем список breakdowns, переданный из Flask #}
+            {% for record in breakdowns %}
+            <tr>
+                <td>{{ record.id }}</td>
+                {# Используем backref для получения имени #}
+                <td>{{ record.factory_obj.name if record.factory_obj else 'Н/Д' }}</td>
+                <td>{{ record.line_obj.name if record.line_obj else 'Н/Д' }}</td>
+                <td>{{ record.machine_obj.name if record.machine_obj else 'Н/Д' }}</td>
+                <td>{{ record.problem_date.strftime('%d.%m.%Y') if record.problem_date else '' }}</td>
+                {# Доступ к имени автора через backref 'author' #}
+                <td>{{ record.author.full_name if record.author else 'Неизвестно' }}</td>
+                <td class="description-col">{{ record.problem_description }}</td>
+                <td class="description-col">{{ record.solution_description or 'Нет' }}</td> {# Если пусто, пишем 'Нет' #}
+                <td class="description-col">{{ record.comment or 'Нет' }}</td> {# Если пусто, пишем 'Нет' #}
+                <td class="photo-col">
+                    {# Проверяем, есть ли имя файла фото #}
+                    {% if record.photo_filename %}
+                        {# Генерируем URL к файлу в static/uploads #}
+                        {% set photo_url = url_for('static', filename='uploads/' + record.photo_filename) %}
+                        <a href="{{ photo_url }}" target="_blank"> {# Ссылка на полное изображение #}
+                            <img src="{{ photo_url }}" alt="Фото поломки {{ record.id }}"> {# Миниатюра #}
+                            (открыть)
+                        </a>
+                    {% else %}
+                        Нет фото
+                    {% endif %}
+                </td>
+                 {# Форматируем дату и время создания записи #}
+                <td>{{ record.created_at.strftime('%d.%m.%Y %H:%M') if record.created_at else '' }}</td>
+            </tr>
+            {% else %}
+            {# Если список breakdowns пуст #}
+            <tr>
+                <td colspan="11" style="text-align: center;">Записей о поломках пока нет.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+</body>
+</html>

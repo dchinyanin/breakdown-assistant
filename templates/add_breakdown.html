@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Добавить запись о поломке</title>
+    <!-- Используем те же стили, что и в register.html/login.html -->
+    <style>
+        body { font-family: sans-serif; margin: 20px; background-color: #f4f4f4; }
+        nav { margin-bottom: 15px; } /* Добавим отступ для навигации */
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; }
+        input[type="text"], input[type="email"], input[type="password"], input[type="date"], select, textarea {
+            width: 90%; /* Сделаем поля пошире */
+            max-width: 500px; /* Но ограничим максимальную ширину */
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box; /* Чтобы padding не увеличивал общую ширину */
+        }
+        textarea { min-height: 100px; } /* Минимальная высота для текстовых полей */
+        input[type="file"] { padding: 3px; } /* Чуть меньше padding для поля файла */
+        .invalid-feedback { color: red; font-size: 0.9em; }
+        .btn { padding: 10px 15px; background-color: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; } /* Зеленая кнопка */
+        .btn:hover { background-color: #218838; }
+        /* Стили для flash-сообщений */
+        .flash-message { padding: 10px; margin-bottom: 15px; border-radius: 4px; }
+        .flash-success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .flash-danger { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .flash-info { background-color: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        .flash-warning { background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; } /* Стиль для warning */
+    </style>
+</head>
+<body>
+    <!-- Навигация (такая же, как на index.html) -->
+    <nav>
+        <a href="{{ url_for('index') }}">Главная</a> |
+        {% if current_user.is_authenticated %}
+            <span>Привет, {{ current_user.full_name }}!</span> |
+            <!-- !!! ДОБАВЛЯЕМ ССЫЛКУ СЮДА !!! -->
+            <a href="{{ url_for('add_breakdown') }}">Добавить запись</a> |
+            <a href="{{ url_for('view_breakdowns') }}">Просмотреть записи</a> |
+            <a href="{{ url_for('logout') }}">Выйти</a>
+        {% else %}
+            <a href="{{ url_for('login') }}">Войти</a> |
+            <a href="{{ url_for('register') }}">Регистрация</a>
+        {% endif %}
+    </nav>
+    <hr>
+
+    <h1>Добавить запись о поломке</h1>
+
+    <!-- Отображение flash-сообщений -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="flash-message flash-{{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <!-- Форма -->
+    <!-- enctype="multipart/form-data" ОБЯЗАТЕЛЕН для загрузки файлов! -->
+    <form method="POST" action="" enctype="multipart/form-data">
+        {{ form.hidden_tag() }} <!-- CSRF защита -->
+
+        <div class="form-group">
+            {{ form.factory.label }}<br>
+            {{ form.factory() }}<br> {# Используем скобки для рендеринга поля #}
+            {% for error in form.factory.errors %}<span class="invalid-feedback">{{ error }}</span><br>{% endfor %}
+        </div>
+
+        <div class="form-group">
+            {{ form.line.label }}<br>
+            {{ form.line() }}<br>
+            {% for error in form.line.errors %}<span class="invalid-feedback">{{ error }}</span><br>{% endfor %}
+        </div>
+
+        <div class="form-group">
+            {{ form.machine.label }}<br>
+            {{ form.machine() }}<br>
+            {% for error in form.machine.errors %}<span class="invalid-feedback">{{ error }}</span><br>{% endfor %}
+        </div>
+
+        <div class="form-group">
+            {{ form.problem_date.label }}<br>
+            {{ form.problem_date() }}<br>
+            {% for error in form.problem_date.errors %}<span class="invalid-feedback">{{ error }}</span><br>{% endfor %}
+        </div>
+
+        <div class="form-group">
+            {{ form.problem_description.label }}<br>
+            {{ form.problem_description(rows=4) }}<br> {# Можно задать атрибут rows #}
+            {% for error in form.problem_description.errors %}<span class="invalid-feedback">{{ error }}</span><br>{% endfor %}
+        </div>
+
+        <div class="form-group">
+            {{ form.solution_description.label }}<br>
+            {{ form.solution_description(rows=4) }}<br>
+            {% for error in form.solution_description.errors %}<span class="invalid-feedback">{{ error }}</span><br>{% endfor %}
+        </div>
+
+        <div class="form-group">
+            {{ form.comment.label }}<br>
+            {{ form.comment(rows=3) }}<br>
+            {% for error in form.comment.errors %}<span class="invalid-feedback">{{ error }}</span><br>{% endfor %}
+        </div>
+
+        <div class="form-group">
+            {{ form.photo.label }}<br>
+            {{ form.photo() }}<br>
+            {% for error in form.photo.errors %}<span class="invalid-feedback">{{ error }}</span><br>{% endfor %}
+        </div>
+
+        <div class="form-group">
+            {{ form.submit(class="btn") }}
+        </div>
+    </form>
+
+</body>
+</html>

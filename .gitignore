@@ -1,0 +1,40 @@
+# Виртуальное окружение
+venv/
+/venv/
+*.venv
+
+# База данных SQLite
+*.db
+*.db-journal*
+*.sqlite
+*.sqlite3
+
+# Пайтоновские штуки
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Загруженные файлы
+/static/uploads/
+
+# IDE/Editor файлы
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sublime-*
+
+# Логи и временные файлы
+*.log
+*.tmp
+*~
+*.swp
+
+# Windows thumbnails
+Thumbs.db
+ehthumbs.db
+
+# macOS specific
+.DS_Store
